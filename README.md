@@ -1,12 +1,12 @@
 # Dissecting-Xv6
 You will get the latest modified verson of Xv6 according to this repository [here](https://github.com/AfnanCSE98/xv6-public)
-### Installation in Debian System
+## Installation in Debian System
 Clone the official Xv6 repository from [here](https://github.com/mit-pdos/xv6-public).We need an emulator to boot Xv6.We will use qemu for this purpose.To install qemu, run from your terminal ```sudo apt install qemu```.Then from where Xv6 was cloned , run `make` to compile Xv6.Then to launch the emulator , run `make qemu` and you will see qemu in a different window.If qemu doesn't launch , then run `sudo apt install qemu-system-x86` and then run `make qemu` again.This time , it should work.
 Still, you might face problems like [this](https://stackoverflow.com/questions/70515788/booting-xv6-with-qemu) then [here](https://www.reddit.com/r/ManjaroLinux/comments/p4445x/help_xv6_installation_on_manjaro/) is a way around.
 
 To run qemu in the same terminal you're using , run `make qemu-nox` instead of `make qemu`.
 
-### Modifying Source Codes
+## Modifying Source Codes
 After qemu is being launched , you will see following system calls by running `ls`
 ![](images/1.png)
 
@@ -26,7 +26,7 @@ Now quit from the qemu terminal pressing `cntrl+A` , release and then type x imm
 
 ![](images/2.png)
 
-### Adding a System call
+## Adding a System call
 Let's create a system call to exit from the qemu terminal.We name it as `shutdown`.So we want to do something that would enable us to exit from the terminal by just writing the command `shutdown`.
 
 First create a file named `shutdown.c`.
@@ -70,39 +70,77 @@ EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c shutdown.c\
 ```
-* **user.h**
-Add ```void shutdown(void);```
 
-* **usys.S**
-Add the following line at the end
-```SYSCALL(shutdown)```
+Now you can exit from the qemu terminal and run `make qemu-nox` again and see that `ls` will list `shutdown` as a system call (comment out `shutdown();` in `shutdown.c`). But running this command won't do anything for now. We've to add this system call to 5 following files
 
-Now you can exit from the qemu terminal and run `make qemu-nox` again and see that `ls` will list `shutdown` as a system call.But running this command won't do anything for now.We've to add this system call to 4 following files
+* **`user.h`**
 
-* **syscall.c**
-Add the following line where similar lines exists
-```extern int sys_shutdown(void);```
-Then in the next block , add
-```[SYS_shutdown] sys_shutdown,```
-* **syscall.h**
-Add the following line at the end
-```#define SYS_shutdown 23```
+  Add ```void shutdown(void);```
 
+* **`usys.S`**
+  
+  Add the following line at the end
+  ```SYSCALL(shutdown)```
 
-Now,there are two files which contain the methods for system calls.`sysfile.c` contains methods related to files and `sysproc.c` contains methods related to processes.We have to write a new method named `sys_shutdown` in `sysproc.c`.
-```cpp
-void sys_shutdown(void){
-  outw(0xB004, 0x0|0x2000);
-  outw(0x604, 0x0|0x2000);
-}
-```
-If everything's fine so far,then you can exit from qemu , run `make qemu-nox` and see the available sytem calls by running `ls`.Run the command `shutdown` and you will see the terminal exiting.
+* **`syscall.h`**
+  
+  Add the following line at the end
+  ```#define SYS_shutdown 23```
 
-![](images/3.png)
+* **`syscall.c`**
+  
+  Add the following line where similar lines exists
+  ```extern int sys_shutdown(void);```
+  Then in the next block , add
+  ```[SYS_shutdown] sys_shutdown,```
 
-**NB**:I have already implemented few more sytem calls.You won't see add,incr,getsize etc for now if those aren't implemented.
+* **`sysproc.c`**
+  
+  Now,there are two files which contain the methods for system calls.`sysfile.c` contains methods related to files and `sysproc.c` contains methods related to processes.We have to write a new method named `sys_shutdown` in `sysproc.c`.
+  ```cpp
+  void sys_shutdown(void){
+    outw(0xB004, 0x0|0x2000);
+    outw(0x604, 0x0|0x2000);
+  }
+  ```
+  If everything's fine so far,then you can exit from qemu , run `make qemu-nox` and see the available sytem calls by running `ls`.Run the command `shutdown` and you will see the terminal exiting.
 
-### System call to increment a number
+  ![](images/3.png)
+
+  **NB**:I have already implemented few more sytem calls.You won't see add,incr,getsize etc for now if those aren't implemented.
+
+  ### Alternate method for `sysproc.c`
+
+  You can also write in `proc.c` and call that function from `sysproc.c`.
+
+  - `def.h`
+    
+    first define in `def.h`
+    ```cpp
+    void            shutdown(void);
+    ```
+  - `proc.c`
+    
+    write function code in `proc.c`
+
+    ```cpp
+    void shutdown(void){
+      cprintf("inside sys_shutdown proc.c");
+      outw(0xB004, 0x0|0x2000);
+      outw(0x604, 0x0|0x2000);
+    }
+    ```
+  - `sysproc.c`
+    
+    and finally in `sysproc.c`
+
+    ```cpp
+    void sys_shutdown(void){
+      shutdown();
+    }
+    ```
+
+## System call to increment a number
 First of all , modify the `atoi` function in `ulib.c` file so that it handles negative numbers too.
 ```cpp
 int
