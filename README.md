@@ -70,6 +70,13 @@ EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c shutdown.c\
 ```
+* **user.h**
+Add ```void shutdown(void);```
+
+* **usys.S**
+Add the following line at the end
+```SYSCALL(shutdown)```
+
 Now you can exit from the qemu terminal and run `make qemu-nox` again and see that `ls` will list `shutdown` as a system call.But running this command won't do anything for now.We've to add this system call to 4 following files
 
 * **syscall.c**
@@ -80,11 +87,7 @@ Then in the next block , add
 * **syscall.h**
 Add the following line at the end
 ```#define SYS_shutdown 23```
-* **usys.S**
-Add the following line at the end
-```SYSCALL(shutdown)```
-* **user.h**
-Add ```void shutdown(void);```
+
 
 Now,there are two files which contain the methods for system calls.`sysfile.c` contains methods related to files and `sysproc.c` contains methods related to processes.We have to write a new method named `sys_shutdown` in `sysproc.c`.
 ```cpp
